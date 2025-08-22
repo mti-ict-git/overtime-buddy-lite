@@ -1,14 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Download, Send, FileText } from "lucide-react";
+import { Mail, Download, Send, FileText, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface OvertimeRecord {
+  id: string;
+  employee_id: string;
+  overtime_date: string;
+  calculation_based_on_time: boolean;
+  plan_overtime_hour: number;
+  date_in: string;
+  from_time: string;
+  date_out: string;
+  to_time: string;
+  break_from_time: string | null;
+  break_to_time: string | null;
+  reason: string;
+}
 
 export default function Export() {
   const { toast } = useToast();
+  const [overtimeData, setOvertimeData] = useState<OvertimeRecord[]>([]);
+  const [loading, setLoading] = useState(false);
   const [emailData, setEmailData] = useState({
     toEmail: "",
     subject: "",
@@ -17,6 +35,41 @@ export default function Export() {
     endDate: "",
   });
 
+  useEffect(() => {
+    fetchOvertimeData();
+  }, []);
+
+  const fetchOvertimeData = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('overtime_records')
+        .select('*')
+        .order('overtime_date', { ascending: false });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch overtime data",
+          variant: "destructive",
+        });
+        console.error('Error fetching overtime data:', error);
+        return;
+      }
+
+      setOvertimeData(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setEmailData((prev) => ({
       ...prev,
@@ -24,8 +77,45 @@ export default function Export() {
     }));
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB').replace(/\//g, '.');
+  };
+
+  const filterDataByDateRange = (data: OvertimeRecord[]) => {
+    if (!emailData.startDate && !emailData.endDate) {
+      return data;
+    }
+
+    return data.filter((item) => {
+      const itemDate = new Date(item.overtime_date);
+      let matchesDateRange = true;
+
+      if (emailData.startDate) {
+        const start = new Date(emailData.startDate);
+        matchesDateRange = matchesDateRange && itemDate >= start;
+      }
+      if (emailData.endDate) {
+        const end = new Date(emailData.endDate);
+        matchesDateRange = matchesDateRange && itemDate <= end;
+      }
+
+      return matchesDateRange;
+    });
+  };
+
   const generateCSV = () => {
-    // Sample CSV generation based on your format
+    const filteredData = filterDataByDateRange(overtimeData);
+    
+    if (filteredData.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No overtime records found for the selected date range",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const headers = [
       "EmployeeID",
       "OvertimeDate(dd.MM.yyyy)",
@@ -40,23 +130,35 @@ export default function Export() {
       "Reason"
     ];
 
-    // Sample data - in a real app, this would come from your database
-    const sampleData = [
-      ["MTI240264", "19.08.2025", "N", "3", "19.08.2025", "15:00", "19.08.2025", "18:00", "", "", "Pemotongan sisa kabel proyek di pyrite server"],
-      ["MTI240264", "20.08.2025", "N", "2", "20.08.2025", "15:00", "20.08.2025", "17:00", "", "", "Preventive Maintenance Network Device Panel Pyrite Plant"],
-      ["MTI240265", "19.08.2025", "N", "2", "19.08.2025", "15:00", "19.08.2025", "17:00", "", "", "Perbaikan CCTV di jembatan penyebrangan Acid Ke Choloride"]
-    ];
+    const csvData = filteredData.map(item => [
+      item.employee_id,
+      formatDate(item.overtime_date),
+      item.calculation_based_on_time ? "Y" : "N",
+      item.plan_overtime_hour.toString(),
+      formatDate(item.date_in),
+      item.from_time,
+      formatDate(item.date_out),
+      item.to_time,
+      item.break_from_time || "",
+      item.break_to_time || "",
+      item.reason
+    ]);
 
     const csvContent = [
       headers.join(";"),
-      ...sampleData.map(row => row.join(";"))
+      ...csvData.map(row => row.join(";"))
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `overtime_report_${new Date().toISOString().split('T')[0]}.csv`);
+    
+    const dateRange = emailData.startDate && emailData.endDate 
+      ? `_${emailData.startDate}_to_${emailData.endDate}`
+      : `_${new Date().toISOString().split('T')[0]}`;
+    
+    link.setAttribute("download", `overtime_report${dateRange}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -64,7 +166,7 @@ export default function Export() {
 
     toast({
       title: "Success",
-      description: "CSV file has been downloaded successfully",
+      description: `CSV file downloaded with ${filteredData.length} records`,
     });
   };
 
@@ -141,9 +243,17 @@ export default function Export() {
                 </code>
               </div>
 
-              <Button onClick={generateCSV} className="w-full bg-gradient-to-r from-corporate-blue to-corporate-blue-dark">
-                <Download className="h-4 w-4 mr-2" />
-                Download CSV Report
+              <Button 
+                onClick={generateCSV} 
+                className="w-full bg-gradient-to-r from-corporate-blue to-corporate-blue-dark"
+                disabled={loading || overtimeData.length === 0}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Download CSV Report ({filterDataByDateRange(overtimeData).length} records)
               </Button>
             </div>
           </CardContent>
