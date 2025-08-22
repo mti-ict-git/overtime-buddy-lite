@@ -110,6 +110,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string, displayName?: string) => {
+    console.log('Starting signup process for:', email);
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -120,12 +122,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     
+    console.log('Signup response:', { data, error });
+    console.log('User created:', data.user);
+    console.log('Session created:', data.session);
+    
     if (error) {
+      console.error('Signup error:', error);
       toast.error(error.message);
     } else if (data.user && !data.session) {
+      console.log('User created but no session - email confirmation required');
       toast.success('Account created! Please check your email to verify your account.');
-    } else {
+    } else if (data.user && data.session) {
+      console.log('User created with immediate session - no email confirmation needed');
       toast.success('Account created and signed in successfully!');
+    } else {
+      console.log('Unexpected signup result');
+      toast.success('Account created!');
     }
     
     return { error };
