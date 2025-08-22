@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,14 +45,63 @@ export default function OvertimeInput() {
     }));
   };
 
+  // Auto-calculate date out and to time when plan overtime hours, date in, or from time changes
+  useEffect(() => {
+    if (formData.planOvertimeHour > 0 && formData.dateIn && formData.fromTime) {
+      calculateEndDateTime();
+    }
+  }, [formData.planOvertimeHour, formData.dateIn, formData.fromTime]);
+
+  const calculateEndDateTime = () => {
+    if (!formData.dateIn || !formData.fromTime || formData.planOvertimeHour <= 0) {
+      return;
+    }
+
+    try {
+      // Parse the date in (format: dd.MM.yyyy)
+      const dateInParts = formData.dateIn.split('.');
+      if (dateInParts.length !== 3) return;
+      
+      const startDate = new Date(
+        parseInt(dateInParts[2]), // year
+        parseInt(dateInParts[1]) - 1, // month (0-indexed)
+        parseInt(dateInParts[0]) // day
+      );
+
+      // Parse the from time (format: HH:MM)
+      const timeParts = formData.fromTime.split(':');
+      if (timeParts.length !== 2) return;
+
+      startDate.setHours(parseInt(timeParts[0]), parseInt(timeParts[1]), 0, 0);
+
+      // Add the overtime hours
+      const endDate = new Date(startDate.getTime() + (formData.planOvertimeHour * 60 * 60 * 1000));
+
+      // Format the end date (dd.MM.yyyy)
+      const endDateFormatted = `${endDate.getDate().toString().padStart(2, '0')}.${(endDate.getMonth() + 1).toString().padStart(2, '0')}.${endDate.getFullYear()}`;
+      
+      // Format the end time (HH:MM)
+      const endTimeFormatted = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+
+      setFormData(prev => ({
+        ...prev,
+        dateOut: endDateFormatted,
+        toTime: endTimeFormatted
+      }));
+    } catch (error) {
+      console.error('Error calculating end date/time:', error);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
-    if (!formData.employeeId || !formData.overtimeDate || !formData.reason) {
+    if (!formData.employeeId || !formData.overtimeDate || !formData.reason || 
+        !formData.dateIn || !formData.fromTime || formData.planOvertimeHour <= 0) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields including plan overtime hours",
         variant: "destructive",
       });
       return;
@@ -167,7 +216,7 @@ export default function OvertimeInput() {
 
               {/* Plan Overtime Hour */}
               <div className="space-y-2">
-                <Label htmlFor="planOvertimeHour">Plan Overtime Hours</Label>
+                <Label htmlFor="planOvertimeHour">Plan Overtime Hours *</Label>
                 <Input
                   id="planOvertimeHour"
                   type="number"
@@ -175,50 +224,60 @@ export default function OvertimeInput() {
                   onChange={(e) => handleInputChange("planOvertimeHour", Number(e.target.value))}
                   min="0"
                   max="24"
+                  step="0.5"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Date out and to time will be calculated automatically
+                </p>
               </div>
 
               {/* Date In */}
               <div className="space-y-2">
-                <Label htmlFor="dateIn">Date In</Label>
+                <Label htmlFor="dateIn">Date In *</Label>
                 <Input
                   id="dateIn"
                   type="date"
                   value={formatDateForInput(formData.dateIn)}
                   onChange={(e) => handleInputChange("dateIn", formatDateFromInput(e.target.value))}
+                  required
                 />
               </div>
 
               {/* From Time */}
               <div className="space-y-2">
-                <Label htmlFor="fromTime">From Time</Label>
+                <Label htmlFor="fromTime">From Time *</Label>
                 <Input
                   id="fromTime"
                   type="time"
                   value={formData.fromTime}
                   onChange={(e) => handleInputChange("fromTime", e.target.value)}
+                  required
                 />
               </div>
 
               {/* Date Out */}
               <div className="space-y-2">
-                <Label htmlFor="dateOut">Date Out</Label>
+                <Label htmlFor="dateOut">Date Out (Auto-calculated)</Label>
                 <Input
                   id="dateOut"
                   type="date"
                   value={formatDateForInput(formData.dateOut)}
                   onChange={(e) => handleInputChange("dateOut", formatDateFromInput(e.target.value))}
+                  className="bg-muted"
+                  readOnly
                 />
               </div>
 
               {/* To Time */}
               <div className="space-y-2">
-                <Label htmlFor="toTime">To Time</Label>
+                <Label htmlFor="toTime">To Time (Auto-calculated)</Label>
                 <Input
                   id="toTime"
                   type="time"
                   value={formData.toTime}
                   onChange={(e) => handleInputChange("toTime", e.target.value)}
+                  className="bg-muted"
+                  readOnly
                 />
               </div>
 
