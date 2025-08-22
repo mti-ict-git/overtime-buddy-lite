@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Search, Filter, Download, Loader2 } from "lucide-react";
+import { BarChart3, Search, Filter, Download, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,6 +35,7 @@ export default function Reports() {
   const [endDate, setEndDate] = useState("");
   const [overtimeData, setOvertimeData] = useState<OvertimeRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOvertimeData();
@@ -80,6 +81,111 @@ export default function Reports() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-GB').replace(/\//g, '.');
+  };
+
+  const handleDelete = async (recordId: string) => {
+    if (!confirm('Are you sure you want to delete this overtime record?')) {
+      return;
+    }
+
+    setDeletingId(recordId);
+    try {
+      const { error } = await supabase
+        .from('overtime_records')
+        .delete()
+        .eq('id', recordId);
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete overtime record",
+          variant: "destructive",
+        });
+        console.error('Error deleting record:', error);
+        return;
+      }
+
+      // Remove the deleted record from local state
+      setOvertimeData(prev => prev.filter(record => record.id !== recordId));
+      
+      toast({
+        title: "Success",
+        description: "Overtime record deleted successfully",
+      });
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (filteredData.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No overtime records found for export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = [
+      "EmployeeID",
+      "OvertimeDate(dd.MM.yyyy)",
+      "CalculationBasedOnTime",
+      "PlanOvertimeHour",
+      "DateIn(dd.MM.yyyy)",
+      "FromTime",
+      "DateOut(dd.MM.yyyy)",
+      "ToTime",
+      "BreakFromTime",
+      "BreakToTime",
+      "Reason"
+    ];
+
+    const csvData = filteredData.map(item => [
+      item.employee_id,
+      formatDate(item.overtime_date),
+      item.calculation_based_on_time ? "Y" : "N",
+      item.plan_overtime_hour.toString(),
+      formatDate(item.date_in),
+      item.from_time,
+      formatDate(item.date_out),
+      item.to_time,
+      item.break_from_time || "",
+      item.break_to_time || "",
+      item.reason
+    ]);
+
+    const csvContent = [
+      headers.join(";"),
+      ...csvData.map(row => row.join(";"))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    
+    const dateRange = startDate && endDate 
+      ? `_${startDate}_to_${endDate}`
+      : `_${new Date().toISOString().split('T')[0]}`;
+    
+    link.setAttribute("download", `overtime_report${dateRange}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Success",
+      description: `CSV file exported with ${filteredData.length} records`,
+    });
   };
 
   const filteredData = overtimeData.filter((item) => {
@@ -236,9 +342,9 @@ export default function Reports() {
                 Showing {filteredData.length} of {overtimeData.length} records
               </CardDescription>
             </div>
-            <Button variant="outline" className="flex items-center space-x-2">
+            <Button variant="outline" className="flex items-center space-x-2" onClick={handleExportCSV}>
               <Download className="h-4 w-4" />
-              <span>Export CSV</span>
+              <span>Export CSV ({filteredData.length} records)</span>
             </Button>
           </div>
         </CardHeader>
@@ -253,12 +359,13 @@ export default function Reports() {
                   <TableHead>Time Range</TableHead>
                   <TableHead>Calculation</TableHead>
                   <TableHead>Reason</TableHead>
+                  <TableHead className="w-20">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       <div className="flex items-center justify-center space-x-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span className="text-muted-foreground">Loading overtime records...</span>
@@ -267,7 +374,7 @@ export default function Reports() {
                   </TableRow>
                 ) : filteredData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No overtime records found
                     </TableCell>
                   </TableRow>
@@ -296,6 +403,21 @@ export default function Reports() {
                       </TableCell>
                       <TableCell className="max-w-xs truncate" title={item.reason}>
                         {item.reason}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deletingId === item.id}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          {deletingId === item.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
