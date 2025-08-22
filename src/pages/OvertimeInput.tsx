@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Plus, Save } from "lucide-react";
+import { Clock, Plus, Save, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OvertimeEntry {
   employeeId: string;
@@ -24,6 +25,7 @@ interface OvertimeEntry {
 
 export default function OvertimeInput() {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<OvertimeEntry>({
     employeeId: "",
     overtimeDate: "",
@@ -93,7 +95,7 @@ export default function OvertimeInput() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
@@ -107,28 +109,100 @@ export default function OvertimeInput() {
       return;
     }
 
-    // Here you would save to your database
-    console.log("Overtime entry:", formData);
-    
-    toast({
-      title: "Success",
-      description: "Overtime entry has been saved successfully",
-    });
+    setLoading(true);
 
-    // Reset form
-    setFormData({
-      employeeId: "",
-      overtimeDate: "",
-      calculationBasedOnTime: "N",
-      planOvertimeHour: 0,
-      dateIn: "",
-      fromTime: "",
-      dateOut: "",
-      toTime: "",
-      breakFromTime: "",
-      breakToTime: "",
-      reason: "",
-    });
+    try {
+      // First, check if employee exists, if not create them
+      const { data: existingEmployee } = await supabase
+        .from('employees')
+        .select('employee_id')
+        .eq('employee_id', formData.employeeId)
+        .single();
+
+      if (!existingEmployee) {
+        // Create employee record
+        const { error: employeeError } = await supabase
+          .from('employees')
+          .insert({
+            employee_id: formData.employeeId,
+            name: `Employee ${formData.employeeId}`, // Default name, can be updated later
+            section: 'IT Section' // Default section
+          });
+
+        if (employeeError) {
+          console.error('Error creating employee:', employeeError);
+          toast({
+            title: "Error",
+            description: "Failed to create employee record",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Convert date format from dd.MM.yyyy to yyyy-MM-dd for database
+      const convertDateForDB = (dateStr: string) => {
+        const parts = dateStr.split('.');
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      };
+
+      // Insert overtime record
+      const { error: overtimeError } = await supabase
+        .from('overtime_records')
+        .insert({
+          employee_id: formData.employeeId,
+          overtime_date: convertDateForDB(formData.overtimeDate),
+          calculation_based_on_time: formData.calculationBasedOnTime === 'Y',
+          plan_overtime_hour: formData.planOvertimeHour,
+          date_in: convertDateForDB(formData.dateIn),
+          from_time: formData.fromTime,
+          date_out: convertDateForDB(formData.dateOut),
+          to_time: formData.toTime,
+          break_from_time: formData.breakFromTime || null,
+          break_to_time: formData.breakToTime || null,
+          reason: formData.reason
+        });
+
+      if (overtimeError) {
+        console.error('Error saving overtime record:', overtimeError);
+        toast({
+          title: "Error",
+          description: "Failed to save overtime record to database",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Overtime entry has been saved to database successfully",
+      });
+
+      // Reset form
+      setFormData({
+        employeeId: "",
+        overtimeDate: "",
+        calculationBasedOnTime: "N",
+        planOvertimeHour: 0,
+        dateIn: "",
+        fromTime: "",
+        dateOut: "",
+        toTime: "",
+        breakFromTime: "",
+        breakToTime: "",
+        reason: "",
+      });
+
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while saving",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDateForInput = (dateStr: string) => {
@@ -318,9 +392,17 @@ export default function OvertimeInput() {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" className="bg-gradient-to-r from-corporate-blue to-corporate-blue-dark">
-                <Save className="h-4 w-4 mr-2" />
-                Save Overtime Entry
+              <Button 
+                type="submit" 
+                className="bg-gradient-to-r from-corporate-blue to-corporate-blue-dark"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {loading ? "Saving..." : "Save Overtime Entry"}
               </Button>
             </div>
           </form>
