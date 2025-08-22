@@ -41,10 +41,19 @@ export default function OvertimeInput() {
   });
 
   const handleInputChange = (field: keyof OvertimeEntry, value: string | number) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [field]: value,
+      };
+      
+      // If overtime date changes, automatically set date in to the same value
+      if (field === 'overtimeDate' && typeof value === 'string') {
+        updated.dateIn = value;
+      }
+      
+      return updated;
+    });
   };
 
   // Auto-calculate date out and to time when plan overtime hours, date in, or from time changes
@@ -100,7 +109,7 @@ export default function OvertimeInput() {
     
     // Basic validation
     if (!formData.employeeId || !formData.overtimeDate || !formData.reason || 
-        !formData.dateIn || !formData.fromTime || formData.planOvertimeHour <= 0) {
+        !formData.fromTime || formData.planOvertimeHour <= 0) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields including plan overtime hours",
@@ -307,14 +316,18 @@ export default function OvertimeInput() {
 
               {/* Date In */}
               <div className="space-y-2">
-                <Label htmlFor="dateIn">Date In *</Label>
+                <Label htmlFor="dateIn">Date In (Auto-filled)</Label>
                 <Input
                   id="dateIn"
                   type="date"
                   value={formatDateForInput(formData.dateIn)}
                   onChange={(e) => handleInputChange("dateIn", formatDateFromInput(e.target.value))}
-                  required
+                  className="bg-muted"
+                  readOnly
                 />
+                <p className="text-xs text-muted-foreground">
+                  Automatically set to same as overtime date
+                </p>
               </div>
 
               {/* From Time */}
