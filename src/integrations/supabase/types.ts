@@ -14,7 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      employees: {
+        Row: {
+          created_at: string
+          email: string | null
+          employee_id: string
+          id: string
+          name: string
+          section: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          employee_id: string
+          id?: string
+          name: string
+          section?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          employee_id?: string
+          id?: string
+          name?: string
+          section?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      overtime_records: {
+        Row: {
+          break_from_time: string | null
+          break_to_time: string | null
+          calculation_based_on_time: boolean
+          created_at: string
+          date_in: string
+          date_out: string
+          employee_id: string
+          from_time: string
+          id: string
+          overtime_date: string
+          plan_overtime_hour: number
+          reason: string
+          to_time: string
+          updated_at: string
+        }
+        Insert: {
+          break_from_time?: string | null
+          break_to_time?: string | null
+          calculation_based_on_time?: boolean
+          created_at?: string
+          date_in: string
+          date_out: string
+          employee_id: string
+          from_time: string
+          id?: string
+          overtime_date: string
+          plan_overtime_hour: number
+          reason: string
+          to_time: string
+          updated_at?: string
+        }
+        Update: {
+          break_from_time?: string | null
+          break_to_time?: string | null
+          calculation_based_on_time?: boolean
+          created_at?: string
+          date_in?: string
+          date_out?: string
+          employee_id?: string
+          from_time?: string
+          id?: string
+          overtime_date?: string
+          plan_overtime_hour?: number
+          reason?: string
+          to_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "overtime_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["employee_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
