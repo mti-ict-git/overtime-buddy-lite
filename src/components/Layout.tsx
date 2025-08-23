@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 
 const navigation = [
   { name: "Input Overtime", href: "/", icon: Clock, allowGuests: true },
+  { name: "Employee Registration", href: "/employee-registration", icon: User, allowGuests: true },
   { name: "Reports", href: "/reports", icon: BarChart3, adminOnly: true },
   { name: "Export", href: "/export", icon: FileText, adminOnly: true },
 ];

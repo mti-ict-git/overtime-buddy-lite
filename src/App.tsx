@@ -7,6 +7,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import AuthGuard from "./components/AuthGuard";
 import Layout from "./components/Layout";
 import OvertimeInput from "./pages/OvertimeInput";
+import EmployeeRegistration from "./pages/EmployeeRegistration";
 import Reports from "./pages/Reports";
 import Export from "./pages/Export";
 import Auth from "./pages/Auth";
@@ -28,6 +29,13 @@ const App = () => (
               <AuthGuard allowGuests>
                 <Layout>
                   <OvertimeInput />
+                </Layout>
+              </AuthGuard>
+            } />
+            <Route path="/employee-registration" element={
+              <AuthGuard allowGuests>
+                <Layout>
+                  <EmployeeRegistration />
                 </Layout>
               </AuthGuard>
             } />

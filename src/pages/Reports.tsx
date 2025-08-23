@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Search, Filter, Download, Loader2, Trash2 } from "lucide-react";
+import { BarChart3, Search, Filter, Download, Loader2, Trash2, Edit, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import EditOvertimeDialog from "@/components/EditOvertimeDialog";
 
 interface OvertimeRecord {
   id: string;
@@ -36,6 +37,11 @@ export default function Reports() {
   const [overtimeData, setOvertimeData] = useState<OvertimeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingRecord, setEditingRecord] = useState<OvertimeRecord | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [sortField, setSortField] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchOvertimeData();
@@ -125,7 +131,7 @@ export default function Reports() {
   };
 
   const handleExportCSV = () => {
-    if (filteredData.length === 0) {
+    if (sortedData.length === 0) {
       toast({
         title: "No Data",
         description: "No overtime records found for export",
@@ -148,7 +154,7 @@ export default function Reports() {
       "Reason"
     ];
 
-    const csvData = filteredData.map(item => [
+    const csvData = sortedData.map(item => [
       item.employee_id,
       formatDate(item.overtime_date),
       item.calculation_based_on_time ? "Y" : "N",
@@ -184,8 +190,29 @@ export default function Reports() {
 
     toast({
       title: "Success",
-      description: `CSV file exported with ${filteredData.length} records`,
+      description: `CSV file exported with ${sortedData.length} records`,
     });
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const handleColumnFilter = (column: string, value: string) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [column]: value
+    }));
+  };
+
+  const handleEdit = (record: OvertimeRecord) => {
+    setEditingRecord(record);
+    setEditDialogOpen(true);
   };
 
   const filteredData = overtimeData.filter((item) => {
@@ -206,12 +233,48 @@ export default function Reports() {
         matchesDateRange = matchesDateRange && itemDate <= end;
       }
     }
+
+    // Apply column filters
+    let matchesColumnFilters = true;
+    Object.entries(columnFilters).forEach(([column, filter]) => {
+      if (filter) {
+        switch (column) {
+          case 'employee_id':
+            matchesColumnFilters = matchesColumnFilters && item.employee_id.toLowerCase().includes(filter.toLowerCase());
+            break;
+          case 'reason':
+            matchesColumnFilters = matchesColumnFilters && item.reason.toLowerCase().includes(filter.toLowerCase());
+            break;
+          case 'calculation':
+            const calcText = item.calculation_based_on_time ? 'time-based' : 'fixed';
+            matchesColumnFilters = matchesColumnFilters && calcText.toLowerCase().includes(filter.toLowerCase());
+            break;
+        }
+      }
+    });
     
-    return matchesSearch && matchesDateRange;
+    return matchesSearch && matchesDateRange && matchesColumnFilters;
   });
 
-  const totalHours = filteredData.reduce((sum, item) => sum + item.plan_overtime_hour, 0);
-  const uniqueEmployees = new Set(filteredData.map(item => item.employee_id)).size;
+  // Sort data
+  const sortedData = [...filteredData].sort((a, b) => {
+    if (!sortField) return 0;
+    
+    let aVal: any = a[sortField as keyof OvertimeRecord];
+    let bVal: any = b[sortField as keyof OvertimeRecord];
+    
+    if (sortField === 'date') {
+      aVal = new Date(a.overtime_date);
+      bVal = new Date(b.overtime_date);
+    }
+    
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const totalHours = sortedData.reduce((sum, item) => sum + item.plan_overtime_hour, 0);
+  const uniqueEmployees = new Set(sortedData.map(item => item.employee_id)).size;
 
   return (
     <div className="space-y-6">
@@ -339,12 +402,12 @@ export default function Reports() {
             <div>
               <CardTitle>Overtime Records</CardTitle>
               <CardDescription>
-                Showing {filteredData.length} of {overtimeData.length} records
+                Showing {sortedData.length} of {overtimeData.length} records
               </CardDescription>
             </div>
             <Button variant="outline" className="flex items-center space-x-2" onClick={handleExportCSV}>
               <Download className="h-4 w-4" />
-              <span>Export CSV ({filteredData.length} records)</span>
+              <span>Export CSV ({sortedData.length} records)</span>
             </Button>
           </div>
         </CardHeader>
@@ -353,13 +416,76 @@ export default function Reports() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee ID</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Hours</TableHead>
+                  <TableHead>
+                    <div className="space-y-2">
+                      <Button variant="ghost" className="h-auto p-0 font-medium" onClick={() => handleSort('employee_id')}>
+                        Employee ID
+                        {sortField === 'employee_id' && (
+                          sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
+                        )}
+                      </Button>
+                      <Input
+                        placeholder="Filter..."
+                        className="h-7 text-xs"
+                        value={columnFilters.employee_id || ''}
+                        onChange={(e) => handleColumnFilter('employee_id', e.target.value)}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div className="space-y-2">
+                      <Button variant="ghost" className="h-auto p-0 font-medium" onClick={() => handleSort('date')}>
+                        Date
+                        {sortField === 'date' && (
+                          sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div className="space-y-2">
+                      <Button variant="ghost" className="h-auto p-0 font-medium" onClick={() => handleSort('plan_overtime_hour')}>
+                        Hours
+                        {sortField === 'plan_overtime_hour' && (
+                          sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </TableHead>
                   <TableHead>Time Range</TableHead>
-                  <TableHead>Calculation</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead className="w-20">Actions</TableHead>
+                  <TableHead>
+                    <div className="space-y-2">
+                      <Button variant="ghost" className="h-auto p-0 font-medium" onClick={() => handleSort('calculation_based_on_time')}>
+                        Calculation
+                        {sortField === 'calculation_based_on_time' && (
+                          sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
+                        )}
+                      </Button>
+                      <Input
+                        placeholder="Filter..."
+                        className="h-7 text-xs"
+                        value={columnFilters.calculation || ''}
+                        onChange={(e) => handleColumnFilter('calculation', e.target.value)}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead>
+                    <div className="space-y-2">
+                      <Button variant="ghost" className="h-auto p-0 font-medium" onClick={() => handleSort('reason')}>
+                        Reason
+                        {sortField === 'reason' && (
+                          sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
+                        )}
+                      </Button>
+                      <Input
+                        placeholder="Filter..."
+                        className="h-7 text-xs"
+                        value={columnFilters.reason || ''}
+                        onChange={(e) => handleColumnFilter('reason', e.target.value)}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-32">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -372,14 +498,14 @@ export default function Reports() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : filteredData.length === 0 ? (
+                ) : sortedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No overtime records found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredData.map((item) => (
+                  sortedData.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
                         <div>
@@ -405,19 +531,29 @@ export default function Reports() {
                         {item.reason}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(item.id)}
-                          disabled={deletingId === item.id}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        >
-                          {deletingId === item.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3 w-3" />
-                          )}
-                        </Button>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(item)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(item.id)}
+                            disabled={deletingId === item.id}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            {deletingId === item.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -427,6 +563,13 @@ export default function Reports() {
           </div>
         </CardContent>
       </Card>
+
+      <EditOvertimeDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        record={editingRecord}
+        onSuccess={fetchOvertimeData}
+      />
     </div>
   );
 }
