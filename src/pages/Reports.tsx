@@ -169,8 +169,8 @@ export default function Reports() {
     ]);
 
     const csvContent = [
-      headers.join(";"),
-      ...csvData.map(row => row.join(";"))
+      headers.join(","),
+      ...csvData.map(row => row.join(","))
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
