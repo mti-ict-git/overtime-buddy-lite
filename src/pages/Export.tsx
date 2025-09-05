@@ -117,7 +117,7 @@ export default function Export() {
     }
 
     const headers = [
-      "EmployeeID",
+      "#!EmployeeID",
       "OvertimeDate(dd.MM.yyyy)",
       "CalculationBasedOnTime",
       "PlanOvertimeHour",
@@ -239,7 +239,7 @@ export default function Export() {
               <div className="bg-muted p-4 rounded-lg">
                 <h4 className="font-medium mb-2">CSV Format Preview:</h4>
                 <code className="text-xs text-muted-foreground block">
-                  EmployeeID,OvertimeDate(dd.MM.yyyy),CalculationBasedOnTime,PlanOvertimeHour,DateIn(dd.MM.yyyy),FromTime,DateOut(dd.MM.yyyy),ToTime,BreakFromTime,BreakToTime,Reason
+                  #!EmployeeID,OvertimeDate(dd.MM.yyyy),CalculationBasedOnTime,PlanOvertimeHour,DateIn(dd.MM.yyyy),FromTime,DateOut(dd.MM.yyyy),ToTime,BreakFromTime,BreakToTime,Reason
                 </code>
               </div>
 
