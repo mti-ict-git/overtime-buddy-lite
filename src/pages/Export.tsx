@@ -82,6 +82,13 @@ export default function Export() {
     return date.toLocaleDateString('en-GB').replace(/\//g, '.');
   };
 
+  const formatTime = (timeString: string | null) => {
+    if (!timeString) return "";
+    // Ensure time is in HH:MM format
+    const time = timeString.substring(0, 5); // Take only HH:MM part
+    return time;
+  };
+
   const filterDataByDateRange = (data: OvertimeRecord[]) => {
     if (!emailData.startDate && !emailData.endDate) {
       return data;
@@ -136,11 +143,11 @@ export default function Export() {
       item.calculation_based_on_time ? "Y" : "N",
       item.plan_overtime_hour.toString(),
       formatDate(item.date_in),
-      item.from_time,
+      formatTime(item.from_time),
       formatDate(item.date_out),
-      item.to_time,
-      item.break_from_time || "",
-      item.break_to_time || "",
+      formatTime(item.to_time),
+      formatTime(item.break_from_time),
+      formatTime(item.break_to_time),
       item.reason
     ]);
 
