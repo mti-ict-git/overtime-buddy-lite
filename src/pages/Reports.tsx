@@ -149,8 +149,6 @@ export default function Reports() {
       "FromTime",
       "DateOut(dd.MM.yyyy)",
       "ToTime",
-      "BreakFromTime",
-      "BreakToTime",
       "Reason"
     ];
 
@@ -163,8 +161,6 @@ export default function Reports() {
       item.from_time,
       formatDate(item.date_out),
       item.to_time,
-      item.break_from_time || "",
-      item.break_to_time || "",
       item.reason
     ]);
 
