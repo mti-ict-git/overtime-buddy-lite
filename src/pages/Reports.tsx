@@ -91,9 +91,12 @@ export default function Reports() {
 
   const formatTime = (timeString: string | null) => {
     if (!timeString) return "";
-    // Ensure time is in HH:MM format
-    const time = timeString.substring(0, 5); // Take only HH:MM part
-    return time;
+    // Remove seconds and ensure time is in HH:MM format
+    const timeParts = timeString.split(':');
+    if (timeParts.length >= 2) {
+      return `${timeParts[0]}:${timeParts[1]}`;
+    }
+    return timeString.substring(0, 5); // Fallback to substring
   };
 
   const handleDelete = async (recordId: string) => {
