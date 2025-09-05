@@ -167,8 +167,8 @@ export default function OvertimeInput() {
           from_time: formData.fromTime,
           date_out: convertDateForDB(formData.dateOut),
           to_time: formData.toTime,
-          break_from_time: formData.breakFromTime || null,
-          break_to_time: formData.breakToTime || null,
+          break_from_time: null,
+          break_to_time: null,
           reason: formData.reason
         });
 
@@ -368,27 +368,6 @@ export default function OvertimeInput() {
                 />
               </div>
 
-              {/* Break From Time */}
-              <div className="space-y-2">
-                <Label htmlFor="breakFromTime">Break From Time</Label>
-                <Input
-                  id="breakFromTime"
-                  type="time"
-                  value={formData.breakFromTime}
-                  onChange={(e) => handleInputChange("breakFromTime", e.target.value)}
-                />
-              </div>
-
-              {/* Break To Time */}
-              <div className="space-y-2">
-                <Label htmlFor="breakToTime">Break To Time</Label>
-                <Input
-                  id="breakToTime"
-                  type="time"
-                  value={formData.breakToTime}
-                  onChange={(e) => handleInputChange("breakToTime", e.target.value)}
-                />
-              </div>
             </div>
 
             {/* Reason */}

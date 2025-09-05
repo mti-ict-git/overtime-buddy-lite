@@ -204,25 +204,6 @@ export default function EditOvertimeDialog({ open, onOpenChange, record, onSucce
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="break_from_time">Break From Time (Optional)</Label>
-              <Input
-                id="break_from_time"
-                type="time"
-                value={formData.break_from_time || ""}
-                onChange={(e) => handleInputChange('break_from_time', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="break_to_time">Break To Time (Optional)</Label>
-              <Input
-                id="break_to_time"
-                type="time"
-                value={formData.break_to_time || ""}
-                onChange={(e) => handleInputChange('break_to_time', e.target.value)}
-              />
-            </div>
           </div>
 
           <div className="space-y-2">

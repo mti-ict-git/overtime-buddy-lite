@@ -125,6 +125,8 @@ export default function Export() {
       "FromTime",
       "DateOut(dd.MM.yyyy)",
       "ToTime",
+      "BreakFromTime",
+      "BreakToTime",
       "Reason"
     ];
 
@@ -137,6 +139,8 @@ export default function Export() {
       item.from_time,
       formatDate(item.date_out),
       item.to_time,
+      item.break_from_time || "",
+      item.break_to_time || "",
       item.reason
     ]);
 
@@ -235,7 +239,7 @@ export default function Export() {
               <div className="bg-muted p-4 rounded-lg">
                 <h4 className="font-medium mb-2">CSV Format Preview:</h4>
                 <code className="text-xs text-muted-foreground block">
-                  EmployeeID,OvertimeDate(dd.MM.yyyy),CalculationBasedOnTime,PlanOvertimeHour,DateIn(dd.MM.yyyy),FromTime,DateOut(dd.MM.yyyy),ToTime,Reason
+                  EmployeeID,OvertimeDate(dd.MM.yyyy),CalculationBasedOnTime,PlanOvertimeHour,DateIn(dd.MM.yyyy),FromTime,DateOut(dd.MM.yyyy),ToTime,BreakFromTime,BreakToTime,Reason
                 </code>
               </div>
 
