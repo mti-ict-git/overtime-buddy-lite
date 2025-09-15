@@ -41,7 +41,7 @@ export default function EditOvertimeDialog({ open, onOpenChange, record, onSucce
         employee_id: record.employee_id,
         overtime_date: record.overtime_date,
         calculation_based_on_time: record.calculation_based_on_time,
-        plan_overtime_hour: record.plan_overtime_hour,
+        plan_overtime_hour: 0,
         date_in: record.date_in,
         from_time: record.from_time,
         date_out: record.date_out,
@@ -141,10 +141,13 @@ export default function EditOvertimeDialog({ open, onOpenChange, record, onSucce
               <Input
                 id="plan_overtime_hour"
                 type="number"
-                value={formData.plan_overtime_hour || ""}
-                onChange={(e) => handleInputChange('plan_overtime_hour', parseInt(e.target.value))}
-                required
+                value={0}
+                readOnly
+                className="bg-muted"
               />
+              <p className="text-xs text-muted-foreground">
+                Plan overtime hours are disabled (always 0)
+              </p>
             </div>
 
             <div className="space-y-2">

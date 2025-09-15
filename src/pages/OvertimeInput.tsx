@@ -57,11 +57,12 @@ export default function OvertimeInput() {
   };
 
   // Auto-calculate date out and to time when plan overtime hours, date in, or from time changes
-  useEffect(() => {
-    if (formData.planOvertimeHour > 0 && formData.dateIn && formData.fromTime) {
-      calculateEndDateTime();
-    }
-  }, [formData.planOvertimeHour, formData.dateIn, formData.fromTime]);
+  // Plan overtime hour is always 0, no calculation needed
+  // useEffect(() => {
+  //   if (formData.planOvertimeHour > 0 && formData.dateIn && formData.fromTime) {
+  //     calculateEndDateTime();
+  //   }
+  // }, [formData.planOvertimeHour, formData.dateIn, formData.fromTime]);
 
   const calculateEndDateTime = () => {
     if (!formData.dateIn || !formData.fromTime || formData.planOvertimeHour <= 0) {
@@ -109,10 +110,10 @@ export default function OvertimeInput() {
     
     // Basic validation
     if (!formData.employeeId || !formData.overtimeDate || !formData.reason || 
-        !formData.fromTime || formData.planOvertimeHour <= 0) {
+        !formData.fromTime) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields including plan overtime hours",
+        description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
@@ -162,7 +163,7 @@ export default function OvertimeInput() {
           employee_id: formData.employeeId,
           overtime_date: convertDateForDB(formData.overtimeDate),
           calculation_based_on_time: formData.calculationBasedOnTime === 'Y',
-          plan_overtime_hour: formData.planOvertimeHour,
+          plan_overtime_hour: 0,
           date_in: convertDateForDB(formData.dateIn),
           from_time: formData.fromTime,
           date_out: convertDateForDB(formData.dateOut),
@@ -297,20 +298,18 @@ export default function OvertimeInput() {
                 </Select>
               </div>
 
-              {/* Plan Overtime Hour */}
+              {/* Plan Overtime Hour - Always 0 */}
               <div className="space-y-2">
-                <Label htmlFor="planOvertimeHour">Plan Overtime Hours *</Label>
+                <Label htmlFor="planOvertimeHour">Plan Overtime Hours</Label>
                 <Input
                   id="planOvertimeHour"
                   type="number"
-                  value={formData.planOvertimeHour}
-                  onChange={(e) => handleInputChange("planOvertimeHour", Number(e.target.value))}
-                  min="0"
-                  max="24"
-                  step="0.5"
+                  value={0}
+                  readOnly
+                  className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Date out and to time will be calculated automatically
+                  Plan overtime hours are disabled (always 0)
                 </p>
               </div>
 
