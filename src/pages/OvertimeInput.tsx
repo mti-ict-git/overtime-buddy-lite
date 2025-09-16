@@ -165,7 +165,7 @@ export default function OvertimeInput() {
           employee_id: formData.employeeId,
           overtime_date: convertDateForDB(formData.overtimeDate),
           calculation_based_on_time: formData.calculationBasedOnTime === 'Y',
-          plan_overtime_hour: 0,
+          plan_overtime_hour: formData.planOvertimeHour,
           date_in: convertDateForDB(formData.dateIn),
           from_time: formData.fromTime,
           date_out: convertDateForDB(formData.dateOut),
@@ -313,7 +313,7 @@ export default function OvertimeInput() {
                   step="0.5"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Saved as 0 in database for export purposes
+                  Exported as 0 in CSV files
                 </p>
               </div>
 

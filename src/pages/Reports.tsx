@@ -168,7 +168,7 @@ export default function Reports() {
       item.employee_id,
       formatDate(item.overtime_date),
       item.calculation_based_on_time ? "Y" : "N",
-      item.plan_overtime_hour.toString(),
+      "0", // Always export plan_overtime_hour as 0
       formatDate(item.date_in),
       formatTime(item.from_time),
       formatDate(item.date_out),

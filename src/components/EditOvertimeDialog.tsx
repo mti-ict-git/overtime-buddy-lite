@@ -70,10 +70,7 @@ export default function EditOvertimeDialog({ open, onOpenChange, record, onSucce
     try {
       const { error } = await supabase
         .from('overtime_records')
-        .update({
-          ...formData,
-          plan_overtime_hour: 0  // Always save as 0 for export
-        })
+        .update(formData)
         .eq('id', record.id);
 
       if (error) {
@@ -151,7 +148,7 @@ export default function EditOvertimeDialog({ open, onOpenChange, record, onSucce
                 step="0.5"
               />
               <p className="text-xs text-muted-foreground">
-                Saved as 0 in database for export purposes
+                Exported as 0 in CSV files
               </p>
             </div>
 
