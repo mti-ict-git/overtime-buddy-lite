@@ -57,12 +57,11 @@ export default function OvertimeInput() {
   };
 
   // Auto-calculate date out and to time when plan overtime hours, date in, or from time changes
-  // Plan overtime hour is always 0, no calculation needed
-  // useEffect(() => {
-  //   if (formData.planOvertimeHour > 0 && formData.dateIn && formData.fromTime) {
-  //     calculateEndDateTime();
-  //   }
-  // }, [formData.planOvertimeHour, formData.dateIn, formData.fromTime]);
+  useEffect(() => {
+    if (formData.planOvertimeHour > 0 && formData.dateIn && formData.fromTime) {
+      calculateEndDateTime();
+    }
+  }, [formData.planOvertimeHour, formData.dateIn, formData.fromTime]);
 
   const calculateEndDateTime = () => {
     if (!formData.dateIn || !formData.fromTime || formData.planOvertimeHour <= 0) {
@@ -110,10 +109,10 @@ export default function OvertimeInput() {
     
     // Basic validation
     if (!formData.employeeId || !formData.overtimeDate || !formData.reason || 
-        !formData.fromTime || !formData.dateOut || !formData.toTime) {
+        !formData.fromTime || formData.planOvertimeHour <= 0) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields including date out and to time",
+        description: "Please fill in all required fields including plan overtime hours",
         variant: "destructive",
       });
       return;
@@ -313,7 +312,7 @@ export default function OvertimeInput() {
                   step="0.5"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Exported as 0 in CSV files
+                  Date out and to time will be calculated automatically. Exported as 0 in CSV files.
                 </p>
               </div>
 
@@ -347,26 +346,34 @@ export default function OvertimeInput() {
 
                {/* Date Out */}
                <div className="space-y-2">
-                 <Label htmlFor="dateOut">Date Out *</Label>
+                 <Label htmlFor="dateOut">Date Out (Auto-calculated)</Label>
                  <Input
                    id="dateOut"
                    type="date"
                    value={formatDateForInput(formData.dateOut)}
                    onChange={(e) => handleInputChange("dateOut", formatDateFromInput(e.target.value))}
-                   required
+                   className="bg-muted"
+                   readOnly
                  />
+                 <p className="text-xs text-muted-foreground">
+                   Calculated based on plan overtime hours
+                 </p>
                </div>
 
                {/* To Time */}
                <div className="space-y-2">
-                 <Label htmlFor="toTime">To Time *</Label>
+                 <Label htmlFor="toTime">To Time (Auto-calculated)</Label>
                  <Input
                    id="toTime"
                    type="time"
                    value={formData.toTime}
                    onChange={(e) => handleInputChange("toTime", e.target.value)}
-                   required
+                   className="bg-muted"
+                   readOnly
                  />
+                 <p className="text-xs text-muted-foreground">
+                   Calculated based on plan overtime hours
+                 </p>
                </div>
 
             </div>
