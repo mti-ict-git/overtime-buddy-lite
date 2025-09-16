@@ -41,7 +41,7 @@ export default function EditOvertimeDialog({ open, onOpenChange, record, onSucce
         employee_id: record.employee_id,
         overtime_date: record.overtime_date,
         calculation_based_on_time: record.calculation_based_on_time,
-        plan_overtime_hour: 0,
+        plan_overtime_hour: record.plan_overtime_hour,
         date_in: record.date_in,
         from_time: record.from_time,
         date_out: record.date_out,
@@ -70,7 +70,10 @@ export default function EditOvertimeDialog({ open, onOpenChange, record, onSucce
     try {
       const { error } = await supabase
         .from('overtime_records')
-        .update(formData)
+        .update({
+          ...formData,
+          plan_overtime_hour: 0  // Always save as 0 for export
+        })
         .eq('id', record.id);
 
       if (error) {
@@ -141,12 +144,14 @@ export default function EditOvertimeDialog({ open, onOpenChange, record, onSucce
               <Input
                 id="plan_overtime_hour"
                 type="number"
-                value={0}
-                readOnly
-                className="bg-muted"
+                value={formData.plan_overtime_hour || ""}
+                onChange={(e) => handleInputChange('plan_overtime_hour', parseInt(e.target.value) || 0)}
+                min="0"
+                max="24"
+                step="0.5"
               />
               <p className="text-xs text-muted-foreground">
-                Plan overtime hours are disabled (always 0)
+                Saved as 0 in database for export purposes
               </p>
             </div>
 

@@ -110,10 +110,10 @@ export default function OvertimeInput() {
     
     // Basic validation
     if (!formData.employeeId || !formData.overtimeDate || !formData.reason || 
-        !formData.fromTime) {
+        !formData.fromTime || !formData.dateOut || !formData.toTime) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields including date out and to time",
         variant: "destructive",
       });
       return;
@@ -152,7 +152,9 @@ export default function OvertimeInput() {
 
       // Convert date format from dd.MM.yyyy to yyyy-MM-dd for database
       const convertDateForDB = (dateStr: string) => {
+        if (!dateStr) return null;
         const parts = dateStr.split('.');
+        if (parts.length !== 3) return null;
         return `${parts[2]}-${parts[1]}-${parts[0]}`;
       };
 
@@ -298,18 +300,20 @@ export default function OvertimeInput() {
                 </Select>
               </div>
 
-              {/* Plan Overtime Hour - Always 0 */}
+              {/* Plan Overtime Hour */}
               <div className="space-y-2">
                 <Label htmlFor="planOvertimeHour">Plan Overtime Hours</Label>
                 <Input
                   id="planOvertimeHour"
                   type="number"
-                  value={0}
-                  readOnly
-                  className="bg-muted"
+                  value={formData.planOvertimeHour}
+                  onChange={(e) => handleInputChange("planOvertimeHour", Number(e.target.value))}
+                  min="0"
+                  max="24"
+                  step="0.5"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Plan overtime hours are disabled (always 0)
+                  Saved as 0 in database for export purposes
                 </p>
               </div>
 
@@ -341,31 +345,29 @@ export default function OvertimeInput() {
                 />
               </div>
 
-              {/* Date Out */}
-              <div className="space-y-2">
-                <Label htmlFor="dateOut">Date Out (Auto-calculated)</Label>
-                <Input
-                  id="dateOut"
-                  type="date"
-                  value={formatDateForInput(formData.dateOut)}
-                  onChange={(e) => handleInputChange("dateOut", formatDateFromInput(e.target.value))}
-                  className="bg-muted"
-                  readOnly
-                />
-              </div>
+               {/* Date Out */}
+               <div className="space-y-2">
+                 <Label htmlFor="dateOut">Date Out *</Label>
+                 <Input
+                   id="dateOut"
+                   type="date"
+                   value={formatDateForInput(formData.dateOut)}
+                   onChange={(e) => handleInputChange("dateOut", formatDateFromInput(e.target.value))}
+                   required
+                 />
+               </div>
 
-              {/* To Time */}
-              <div className="space-y-2">
-                <Label htmlFor="toTime">To Time (Auto-calculated)</Label>
-                <Input
-                  id="toTime"
-                  type="time"
-                  value={formData.toTime}
-                  onChange={(e) => handleInputChange("toTime", e.target.value)}
-                  className="bg-muted"
-                  readOnly
-                />
-              </div>
+               {/* To Time */}
+               <div className="space-y-2">
+                 <Label htmlFor="toTime">To Time *</Label>
+                 <Input
+                   id="toTime"
+                   type="time"
+                   value={formData.toTime}
+                   onChange={(e) => handleInputChange("toTime", e.target.value)}
+                   required
+                 />
+               </div>
 
             </div>
 
