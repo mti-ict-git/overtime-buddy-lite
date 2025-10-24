@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { User, Loader2, Edit, Trash2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { employeeSchema } from "@/lib/validation";
 
 interface Employee {
   id: string;
@@ -26,6 +27,7 @@ export default function EmployeeRegistration() {
   const [loadingEmployees, setLoadingEmployees] = useState(true);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     employee_id: "",
     name: ""
@@ -48,13 +50,12 @@ export default function EmployeeRegistration() {
           description: "Failed to fetch employees",
           variant: "destructive",
         });
-        console.error('Error:', error);
         return;
       }
 
       setEmployees(data || []);
     } catch (error) {
-      console.error('Unexpected error:', error);
+      // Error already handled
     } finally {
       setLoadingEmployees(false);
     }
@@ -88,11 +89,20 @@ export default function EmployeeRegistration() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationErrors({});
     
-    if (!formData.employee_id.trim() || !formData.name.trim()) {
+    // Validate with zod
+    try {
+      employeeSchema.parse(formData);
+    } catch (error: any) {
+      const errors: Record<string, string> = {};
+      error.errors.forEach((err: any) => {
+        errors[err.path[0]] = err.message;
+      });
+      setValidationErrors(errors);
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
         variant: "destructive",
       });
       return;
@@ -114,10 +124,9 @@ export default function EmployeeRegistration() {
         if (error) {
           toast({
             title: "Error",
-            description: "Failed to update employee",
+            description: "Failed to update employee. You must be admin.",
             variant: "destructive",
           });
-          console.error('Error:', error);
           return;
         }
 
@@ -154,10 +163,9 @@ export default function EmployeeRegistration() {
         if (error) {
           toast({
             title: "Error",
-            description: "Failed to register employee",
+            description: "Failed to register employee. You must be authenticated.",
             variant: "destructive",
           });
-          console.error('Error:', error);
           return;
         }
 
@@ -173,7 +181,6 @@ export default function EmployeeRegistration() {
       fetchEmployees(); // Refresh the list
 
     } catch (error) {
-      console.error('Unexpected error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -194,10 +201,9 @@ export default function EmployeeRegistration() {
       if (error) {
         toast({
           title: "Error",
-          description: "Failed to delete employee",
+          description: "Failed to delete employee. You must be admin.",
           variant: "destructive",
         });
-        console.error('Error:', error);
         return;
       }
 
@@ -208,7 +214,6 @@ export default function EmployeeRegistration() {
 
       fetchEmployees(); // Refresh the list
     } catch (error) {
-      console.error('Unexpected error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -247,18 +252,22 @@ export default function EmployeeRegistration() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="employee_id">Employee ID *</Label>
+                <Label htmlFor="employee_id">Employee ID * (3-20 chars, alphanumeric)</Label>
                 <Input
                   id="employee_id"
                   type="text"
                   value={formData.employee_id}
                   onChange={(e) => handleInputChange('employee_id', e.target.value)}
-                  placeholder="Enter employee ID"
+                  placeholder="e.g., EMP001"
                   required
+                  className={validationErrors.employee_id ? 'border-destructive' : ''}
                 />
+                {validationErrors.employee_id && (
+                  <p className="text-sm text-destructive">{validationErrors.employee_id}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name *</Label>
+                <Label htmlFor="name">Full Name * (2-100 chars)</Label>
                 <Input
                   id="name"
                   type="text"
@@ -266,7 +275,12 @@ export default function EmployeeRegistration() {
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="Enter full name"
                   required
+                  maxLength={100}
+                  className={validationErrors.name ? 'border-destructive' : ''}
                 />
+                {validationErrors.name && (
+                  <p className="text-sm text-destructive">{validationErrors.name}</p>
+                )}
               </div>
               <DialogFooter>
                 <Button

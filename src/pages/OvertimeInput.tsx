@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Clock, Plus, Save, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { overtimeSchema } from "@/lib/validation";
 
 interface OvertimeEntry {
   employeeId: string;
@@ -26,6 +27,7 @@ interface OvertimeEntry {
 export default function OvertimeInput() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<OvertimeEntry>({
     employeeId: "",
     overtimeDate: "",
@@ -100,19 +102,32 @@ export default function OvertimeInput() {
         toTime: endTimeFormatted
       }));
     } catch (error) {
-      console.error('Error calculating end date/time:', error);
+      // Error calculating dates - silently handle
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationErrors({});
     
-    // Basic validation
-    if (!formData.employeeId || !formData.overtimeDate || !formData.reason || 
-        !formData.fromTime || formData.planOvertimeHour <= 0) {
+    // Validate with zod
+    try {
+      overtimeSchema.parse({
+        employeeId: formData.employeeId,
+        overtimeDate: formData.overtimeDate,
+        planOvertimeHour: formData.planOvertimeHour,
+        fromTime: formData.fromTime,
+        reason: formData.reason
+      });
+    } catch (error: any) {
+      const errors: Record<string, string> = {};
+      error.errors.forEach((err: any) => {
+        errors[err.path[0]] = err.message;
+      });
+      setValidationErrors(errors);
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields including plan overtime hours",
+        description: "Please fix the errors in the form",
         variant: "destructive",
       });
       return;
@@ -139,10 +154,9 @@ export default function OvertimeInput() {
           });
 
         if (employeeError) {
-          console.error('Error creating employee:', employeeError);
           toast({
             title: "Error",
-            description: "Failed to create employee record",
+            description: "Failed to create employee record. You must be authenticated.",
             variant: "destructive",
           });
           return;
@@ -175,10 +189,9 @@ export default function OvertimeInput() {
         });
 
       if (overtimeError) {
-        console.error('Error saving overtime record:', overtimeError);
         toast({
           title: "Error",
-          description: "Failed to save overtime record to database",
+          description: "Failed to save overtime record. You must be authenticated.",
           variant: "destructive",
         });
         return;
@@ -205,7 +218,6 @@ export default function OvertimeInput() {
       });
 
     } catch (error) {
-      console.error('Unexpected error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred while saving",
@@ -265,9 +277,13 @@ export default function OvertimeInput() {
                   id="employeeId"
                   value={formData.employeeId}
                   onChange={(e) => handleInputChange("employeeId", e.target.value)}
-                  placeholder="e.g., MTI240264"
+                  placeholder="e.g., MTI240264 (3-20 chars, alphanumeric)"
                   required
+                  className={validationErrors.employeeId ? 'border-destructive' : ''}
                 />
+                {validationErrors.employeeId && (
+                  <p className="text-sm text-destructive">{validationErrors.employeeId}</p>
+                )}
               </div>
 
               {/* Overtime Date */}
@@ -301,16 +317,20 @@ export default function OvertimeInput() {
 
               {/* Plan Overtime Hour */}
               <div className="space-y-2">
-                <Label htmlFor="planOvertimeHour">Plan Overtime Hours</Label>
+                <Label htmlFor="planOvertimeHour">Plan Overtime Hours *</Label>
                 <Input
                   id="planOvertimeHour"
                   type="number"
                   value={formData.planOvertimeHour}
                   onChange={(e) => handleInputChange("planOvertimeHour", Number(e.target.value))}
-                  min="0"
+                  min="0.5"
                   max="24"
                   step="0.5"
+                  className={validationErrors.planOvertimeHour ? 'border-destructive' : ''}
                 />
+                {validationErrors.planOvertimeHour && (
+                  <p className="text-sm text-destructive">{validationErrors.planOvertimeHour}</p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Date out and to time will be calculated automatically. Exported as 0 in CSV files.
                 </p>
@@ -380,15 +400,23 @@ export default function OvertimeInput() {
 
             {/* Reason */}
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason *</Label>
+              <Label htmlFor="reason">Reason * (10-1000 characters)</Label>
               <Textarea
                 id="reason"
                 value={formData.reason}
                 onChange={(e) => handleInputChange("reason", e.target.value)}
-                placeholder="Describe the overtime work performed..."
+                placeholder="Describe the overtime work performed (minimum 10 characters)..."
                 rows={3}
                 required
+                maxLength={1000}
+                className={validationErrors.reason ? 'border-destructive' : ''}
               />
+              {validationErrors.reason && (
+                <p className="text-sm text-destructive">{validationErrors.reason}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {formData.reason.length}/1000 characters
+              </p>
             </div>
 
             <div className="flex justify-end">
