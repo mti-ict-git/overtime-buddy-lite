@@ -56,6 +56,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let inactivityTimer: NodeJS.Timeout;
+    const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+      }
+      
+      // Only set timer if user is authenticated
+      if (user) {
+        inactivityTimer = setTimeout(() => {
+          toast.info('Session expired due to inactivity');
+          signOut();
+        }, INACTIVITY_TIMEOUT);
+      }
+    };
+
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -69,9 +90,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setProfile(profileData);
             setLoading(false);
           }, 0);
+          
+          // Start inactivity timer when user logs in
+          resetInactivityTimer();
         } else {
           setProfile(null);
           setLoading(false);
+          
+          // Clear timer when user logs out
+          if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+          }
         }
       }
     );
@@ -86,13 +115,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setProfile(profileData);
           setLoading(false);
         });
+        
+        // Start inactivity timer for existing session
+        resetInactivityTimer();
       } else {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // Activity event listeners
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+      }
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [user]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
