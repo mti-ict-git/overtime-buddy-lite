@@ -137,26 +137,28 @@ export default function OvertimeInput() {
 
     try {
       // First, check if employee exists, if not create them
-      const { data: existingEmployee } = await supabase
+      const { data: existingEmployee, error: checkError } = await supabase
         .from('employees')
         .select('employee_id')
         .eq('employee_id', formData.employeeId)
         .maybeSingle();
 
-      if (!existingEmployee) {
-        // Create employee record
+      // Only try to create employee if check succeeded and no employee found
+      if (!checkError && !existingEmployee) {
         const { error: employeeError } = await supabase
           .from('employees')
           .insert({
             employee_id: formData.employeeId,
-            name: `Employee ${formData.employeeId}`, // Default name, can be updated later
-            section: 'IT Section' // Default section
+            name: `Employee ${formData.employeeId}`,
+            section: 'IT Section'
           });
 
-        if (employeeError) {
+        // Ignore duplicate key errors (employee already exists)
+        if (employeeError && !employeeError.message.includes('duplicate key')) {
+          console.error('Employee creation error:', employeeError);
           toast({
             title: "Error",
-            description: "Failed to create employee record. You must be authenticated.",
+            description: "Failed to create employee record.",
             variant: "destructive",
           });
           return;
