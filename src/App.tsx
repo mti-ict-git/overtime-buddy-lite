@@ -12,6 +12,7 @@ import Reports from "./pages/Reports";
 import Export from "./pages/Export";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,13 @@ const App = () => (
               <AuthGuard requireAdmin>
                 <Layout>
                   <Settings />
+                </Layout>
+              </AuthGuard>
+            } />
+            <Route path="/users" element={
+              <AuthGuard requireAdmin>
+                <Layout>
+                  <UserManagement />
                 </Layout>
               </AuthGuard>
             } />

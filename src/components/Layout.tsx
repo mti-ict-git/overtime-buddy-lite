@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Clock, FileText, BarChart3, Mail, User, Settings, LogOut, ChevronRight } from "lucide-react";
+import { Clock, FileText, BarChart3, Mail, User, Settings, LogOut, ChevronRight, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const navigation = [
   { name: "Employee Registration", href: "/employee-registration", icon: User, allowGuests: true },
   { name: "Reports", href: "/reports", icon: BarChart3, adminOnly: true },
   { name: "Export", href: "/export", icon: FileText, adminOnly: true },
+  { name: "User Management", href: "/users", icon: Users, adminOnly: true },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
