@@ -141,7 +141,7 @@ export default function OvertimeInput() {
         .from('employees')
         .select('employee_id')
         .eq('employee_id', formData.employeeId)
-        .single();
+        .maybeSingle();
 
       if (!existingEmployee) {
         // Create employee record
