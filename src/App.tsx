@@ -61,7 +61,7 @@ const App = () => (
                 </Layout>
               </AuthGuard>
             } />
-            <Route path="/users" element={
+            <Route path="/employee-management" element={
               <AuthGuard requireAdmin>
                 <Layout>
                   <UserManagement />

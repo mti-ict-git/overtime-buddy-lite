@@ -17,7 +17,7 @@ const navigation = [
   { name: "Employee Registration", href: "/employee-registration", icon: User, allowGuests: true },
   { name: "Reports", href: "/reports", icon: BarChart3, adminOnly: true },
   { name: "Export", href: "/export", icon: FileText, adminOnly: true },
-  { name: "User Management", href: "/users", icon: Users, adminOnly: true },
+  { name: "User Management", href: "/employee-management", icon: Users, adminOnly: true },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
