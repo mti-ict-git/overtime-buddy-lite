@@ -8,7 +8,7 @@ interface Profile {
   user_id: string;
   email: string;
   display_name: string | null;
-  role: 'admin' | 'guest';
+  role: 'admin' | 'guest' | 'user';
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +22,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAdmin: () => boolean;
+  isUser: () => boolean;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
 }
 
@@ -159,6 +160,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return profile?.role === 'admin';
   };
 
+  const isUser = () => {
+    return profile?.role === 'user';
+  };
+
   const value = {
     user,
     session,
@@ -168,6 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signUp,
     signOut,
     isAdmin,
+    isUser,
     updatePassword,
   };
 

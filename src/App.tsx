@@ -26,7 +26,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={
-              <AuthGuard allowGuests>
+              <AuthGuard>
                 <Layout>
                   <OvertimeInput />
                 </Layout>

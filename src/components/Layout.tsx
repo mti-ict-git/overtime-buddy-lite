@@ -21,11 +21,14 @@ const navigation = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { user, profile, signOut, isAdmin } = useAuth();
+  const { user, profile, signOut, isAdmin, isUser } = useAuth();
 
   const filteredNavigation = navigation.filter(item => {
     // If user is not authenticated, only show items that allow guests
     if (!user) return item.allowGuests;
+    
+    // If user has 'user' role, only show Input Overtime
+    if (isUser() && item.href !== '/') return false;
     
     // If user is authenticated but not admin, filter out admin-only items
     if (!isAdmin() && item.adminOnly) return false;

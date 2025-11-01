@@ -10,7 +10,7 @@ interface AuthGuardProps {
 }
 
 const AuthGuard = ({ children, requireAdmin = false, allowGuests = false }: AuthGuardProps) => {
-  const { user, profile, loading, isAdmin } = useAuth();
+  const { user, profile, loading, isAdmin, isUser } = useAuth();
 
   if (loading) {
     return (
