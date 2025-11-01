@@ -132,6 +132,9 @@ export default function UserManagement() {
       return;
     }
 
+    // Save current admin session
+    const { data: { session: adminSession } } = await supabase.auth.getSession();
+
     const { data, error } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
@@ -167,6 +170,14 @@ export default function UserManagement() {
       if (profileError) {
         console.error('Error updating profile:', profileError);
       }
+    }
+
+    // Restore admin session
+    if (adminSession) {
+      await supabase.auth.setSession({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
+      });
     }
 
     toast.success('User created successfully');
