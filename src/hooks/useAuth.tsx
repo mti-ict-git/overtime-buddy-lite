@@ -56,27 +56,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    let inactivityTimer: NodeJS.Timeout;
-    const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
-
-    const resetInactivityTimer = () => {
-      if (inactivityTimer) {
-        clearTimeout(inactivityTimer);
-      }
-      
-      // Only set timer if user is authenticated
-      if (user) {
-        inactivityTimer = setTimeout(() => {
-          toast.info('Session expired due to inactivity');
-          signOut();
-        }, INACTIVITY_TIMEOUT);
-      }
-    };
-
-    const handleActivity = () => {
-      resetInactivityTimer();
-    };
-
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -90,17 +69,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setProfile(profileData);
             setLoading(false);
           }, 0);
-          
-          // Start inactivity timer when user logs in
-          resetInactivityTimer();
         } else {
           setProfile(null);
           setLoading(false);
-          
-          // Clear timer when user logs out
-          if (inactivityTimer) {
-            clearTimeout(inactivityTimer);
-          }
         }
       }
     );
@@ -115,13 +86,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setProfile(profileData);
           setLoading(false);
         });
-        
-        // Start inactivity timer for existing session
-        resetInactivityTimer();
       } else {
         setLoading(false);
       }
     });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Separate effect for inactivity timer
+  useEffect(() => {
+    if (!user) return;
+
+    let inactivityTimer: NodeJS.Timeout;
+    const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+      }
+      
+      inactivityTimer = setTimeout(() => {
+        toast.info('Session expired due to inactivity');
+        signOut();
+      }, INACTIVITY_TIMEOUT);
+    };
+
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
+    // Start timer
+    resetInactivityTimer();
 
     // Activity event listeners
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
@@ -130,7 +126,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => {
-      subscription.unsubscribe();
       if (inactivityTimer) {
         clearTimeout(inactivityTimer);
       }
