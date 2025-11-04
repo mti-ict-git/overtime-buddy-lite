@@ -136,30 +136,6 @@ export default function OvertimeInput() {
     setLoading(true);
 
     try {
-      // Ensure the current user has the 'user' role (no-op if already set)
-      const { error: roleError } = await supabase.rpc('ensure_user_role');
-      if (roleError) {
-        console.error('Role assignment error:', roleError);
-      }
-
-      // Ensure employee exists using secure function
-      const { error: employeeError } = await supabase.rpc('ensure_employee_exists', {
-        p_employee_id: formData.employeeId,
-        p_name: `Employee ${formData.employeeId}`,
-        p_section: 'IT Section',
-        p_email: null
-      });
-
-      if (employeeError) {
-        console.error('Employee creation error:', employeeError);
-        toast({
-          title: "Error",
-          description: "Failed to create employee record.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Convert date format from dd.MM.yyyy to yyyy-MM-dd for database
       const convertDateForDB = (dateStr: string) => {
         if (!dateStr) return null;
@@ -168,27 +144,29 @@ export default function OvertimeInput() {
         return `${parts[2]}-${parts[1]}-${parts[0]}`;
       };
 
-      // Insert overtime record
-      const { error: overtimeError } = await supabase
-        .from('overtime_records')
-        .insert({
-          employee_id: formData.employeeId,
-          overtime_date: convertDateForDB(formData.overtimeDate),
-          calculation_based_on_time: formData.calculationBasedOnTime === 'Y',
-          plan_overtime_hour: formData.planOvertimeHour,
-          date_in: convertDateForDB(formData.dateIn),
-          from_time: formData.fromTime,
-          date_out: convertDateForDB(formData.dateOut),
-          to_time: formData.toTime,
-          break_from_time: null,
-          break_to_time: null,
-          reason: formData.reason
-        });
+      // Submit overtime using secure atomic function
+      const { data, error } = await supabase.rpc('submit_overtime_entry', {
+        p_employee_id: formData.employeeId,
+        p_overtime_date: convertDateForDB(formData.overtimeDate),
+        p_calculation_based_on_time: formData.calculationBasedOnTime === 'Y',
+        p_plan_overtime_hour: formData.planOvertimeHour,
+        p_date_in: convertDateForDB(formData.dateIn),
+        p_from_time: formData.fromTime,
+        p_date_out: convertDateForDB(formData.dateOut),
+        p_to_time: formData.toTime,
+        p_reason: formData.reason,
+        p_break_from_time: null,
+        p_break_to_time: null,
+        p_name: `Employee ${formData.employeeId}`,
+        p_section: 'IT Section',
+        p_email: null
+      });
 
-      if (overtimeError) {
+      if (error) {
+        console.error('Overtime submission error:', error);
         toast({
           title: "Error",
-          description: "Failed to save overtime record. You must be authenticated.",
+          description: error.message || "Failed to save overtime record. You must be authenticated.",
           variant: "destructive",
         });
         return;
