@@ -175,28 +175,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    // Try global sign-out first
+    // Attempt global sign-out, but don't block on errors
     const { error } = await supabase.auth.signOut();
 
-    if (error) {
-      const msg = (error.message || '').toLowerCase();
-      const shouldIgnore =
-        // common supabase errors when the server-side session already expired
-        error.status === 403 ||
-        msg.includes('session_not_found') ||
-        msg.includes('session not found') ||
-        msg.includes('auth session missing');
+    const msg = (error?.message || '').toLowerCase();
+    const ignore =
+      (error?.status === 403) ||
+      msg.includes('session_not_found') ||
+      msg.includes('session not found') ||
+      msg.includes('auth session missing');
 
-      if (shouldIgnore) {
-        // Ensure local session is cleared even if server session is missing
-        try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
-        toast.success('Signed out successfully!');
-      } else {
-        toast.error(error.message);
-      }
+    // Always clear local session to ensure UI updates
+    try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
+
+    // Clear client state immediately
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+
+    if (error && !ignore) {
+      toast.error(error.message);
     } else {
       toast.success('Signed out successfully!');
     }
+
+    // Ensure redirect off protected routes
+    try { window.location.assign('/auth'); } catch {}
   };
 
   const updatePassword = async (newPassword: string) => {
