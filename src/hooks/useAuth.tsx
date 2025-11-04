@@ -175,10 +175,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    // Sign out (will trigger auth state change listener to clear state)
+    const PROJECT_REF = 'sgumazpqjdbrpjgiztxt';
+
     try {
+      // Try to sign out server-side; ignore if session already missing
       await supabase.auth.signOut();
-      toast.success('Signed out successfully!');
     } catch (error: any) {
       const msg = (error?.message || '').toLowerCase();
       const ignore =
@@ -186,17 +187,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         msg.includes('session_not_found') ||
         msg.includes('session not found') ||
         msg.includes('auth session missing');
-      
-      if (ignore) {
-        // Session already expired, manually clear state
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        toast.success('Signed out successfully!');
-      } else {
-        toast.error(error.message);
+      if (!ignore) {
+        console.error('Sign out error:', error);
       }
     }
+
+    // Force clear local tokens so the client doesn't auto re-auth
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(`sb-${PROJECT_REF}-auth-token`)) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch {}
+
+    // Clear client state and redirect to login
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    toast.success('Signed out successfully!');
+    try { window.location.assign('/auth'); } catch {}
   };
 
   const updatePassword = async (newPassword: string) => {
