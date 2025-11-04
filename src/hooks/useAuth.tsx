@@ -175,11 +175,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Try global sign-out first
     const { error } = await supabase.auth.signOut();
-    // Only show error if it's not a "session not found" error
-    // (session already expired is fine, we just want to sign out)
-    if (error && !error.message.includes('session_not_found') && !error.message.includes('Session not found')) {
-      toast.error(error.message);
+
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      const shouldIgnore =
+        // common supabase errors when the server-side session already expired
+        error.status === 403 ||
+        msg.includes('session_not_found') ||
+        msg.includes('session not found') ||
+        msg.includes('auth session missing');
+
+      if (shouldIgnore) {
+        // Ensure local session is cleared even if server session is missing
+        try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
+        toast.success('Signed out successfully!');
+      } else {
+        toast.error(error.message);
+      }
     } else {
       toast.success('Signed out successfully!');
     }
