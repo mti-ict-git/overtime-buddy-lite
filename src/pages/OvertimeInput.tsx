@@ -136,33 +136,32 @@ export default function OvertimeInput() {
     setLoading(true);
 
     try {
-      // First, check if employee exists, if not create them
-      const { data: existingEmployee, error: checkError } = await supabase
+      // Ensure the current user has the 'user' role
+      const { error: roleError } = await supabase.rpc('ensure_user_role');
+      if (roleError) {
+        console.error('Role assignment error:', roleError);
+      }
+
+      // Upsert employee record (create if not exists, ignore if exists)
+      const { error: employeeError } = await supabase
         .from('employees')
-        .select('employee_id')
-        .eq('employee_id', formData.employeeId)
-        .maybeSingle();
+        .upsert({
+          employee_id: formData.employeeId,
+          name: `Employee ${formData.employeeId}`,
+          section: 'IT Section'
+        }, { 
+          onConflict: 'employee_id',
+          ignoreDuplicates: true 
+        });
 
-      // Only try to create employee if check succeeded and no employee found
-      if (!checkError && !existingEmployee) {
-        const { error: employeeError } = await supabase
-          .from('employees')
-          .insert({
-            employee_id: formData.employeeId,
-            name: `Employee ${formData.employeeId}`,
-            section: 'IT Section'
-          });
-
-        // Ignore duplicate key errors (employee already exists)
-        if (employeeError && !employeeError.message.includes('duplicate key')) {
-          console.error('Employee creation error:', employeeError);
-          toast({
-            title: "Error",
-            description: "Failed to create employee record.",
-            variant: "destructive",
-          });
-          return;
-        }
+      if (employeeError) {
+        console.error('Employee upsert error:', employeeError);
+        toast({
+          title: "Error",
+          description: "Failed to create employee record.",
+          variant: "destructive",
+        });
+        return;
       }
 
       // Convert date format from dd.MM.yyyy to yyyy-MM-dd for database
