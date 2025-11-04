@@ -206,25 +206,45 @@ export type Database = {
         }
         Returns: boolean
       }
-      submit_overtime_entry: {
-        Args: {
-          p_break_from_time?: string
-          p_break_to_time?: string
-          p_calculation_based_on_time: boolean
-          p_date_in: string
-          p_date_out: string
-          p_email?: string
-          p_employee_id: string
-          p_from_time: string
-          p_name?: string
-          p_overtime_date: string
-          p_plan_overtime_hour: number
-          p_reason: string
-          p_section?: string
-          p_to_time: string
-        }
-        Returns: string
-      }
+      submit_overtime_entry:
+        | {
+            Args: {
+              p_break_from_time?: string
+              p_break_to_time?: string
+              p_calculation_based_on_time: boolean
+              p_date_in: string
+              p_date_out: string
+              p_email?: string
+              p_employee_id: string
+              p_from_time: string
+              p_name?: string
+              p_overtime_date: string
+              p_plan_overtime_hour: number
+              p_reason: string
+              p_section?: string
+              p_to_time: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_break_from_time?: string
+              p_break_to_time?: string
+              p_calculation_based_on_time: boolean
+              p_date_in: string
+              p_date_out: string
+              p_email?: string
+              p_employee_id: string
+              p_from_time: string
+              p_name?: string
+              p_overtime_date: string
+              p_plan_overtime_hour: number
+              p_reason: string
+              p_section?: string
+              p_to_time: string
+            }
+            Returns: string
+          }
     }
     Enums: {
       app_role: "admin" | "guest" | "user"
