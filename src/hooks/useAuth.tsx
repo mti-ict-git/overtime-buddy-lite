@@ -176,7 +176,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) {
+    // Only show error if it's not a "session not found" error
+    // (session already expired is fine, we just want to sign out)
+    if (error && !error.message.includes('session_not_found') && !error.message.includes('Session not found')) {
       toast.error(error.message);
     } else {
       toast.success('Signed out successfully!');
