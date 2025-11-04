@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Clock, Plus, Save, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { overtimeSchema } from "@/lib/validation";
+import { useAuth } from "@/hooks/useAuth";
 
 interface OvertimeEntry {
   employeeId: string;
@@ -26,6 +27,7 @@ interface OvertimeEntry {
 
 export default function OvertimeInput() {
   const { toast } = useToast();
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<OvertimeEntry>({
@@ -157,9 +159,9 @@ export default function OvertimeInput() {
         p_reason: formData.reason,
         p_break_from_time: null,
         p_break_to_time: null,
-        p_name: `Employee ${formData.employeeId}`,
+        p_name: profile?.display_name || user?.email || `Employee ${formData.employeeId}`,
         p_section: 'IT Section',
-        p_email: null
+        p_email: profile?.email || user?.email || null
       });
 
       if (error) {
