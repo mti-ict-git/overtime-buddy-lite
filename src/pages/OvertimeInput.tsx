@@ -136,26 +136,22 @@ export default function OvertimeInput() {
     setLoading(true);
 
     try {
-      // Ensure the current user has the 'user' role
+      // Ensure the current user has the 'user' role (no-op if already set)
       const { error: roleError } = await supabase.rpc('ensure_user_role');
       if (roleError) {
         console.error('Role assignment error:', roleError);
       }
 
-      // Upsert employee record (create if not exists, ignore if exists)
-      const { error: employeeError } = await supabase
-        .from('employees')
-        .upsert({
-          employee_id: formData.employeeId,
-          name: `Employee ${formData.employeeId}`,
-          section: 'IT Section'
-        }, { 
-          onConflict: 'employee_id',
-          ignoreDuplicates: true 
-        });
+      // Ensure employee exists using secure function
+      const { error: employeeError } = await supabase.rpc('ensure_employee_exists', {
+        p_employee_id: formData.employeeId,
+        p_name: `Employee ${formData.employeeId}`,
+        p_section: 'IT Section',
+        p_email: null
+      });
 
       if (employeeError) {
-        console.error('Employee upsert error:', employeeError);
+        console.error('Employee creation error:', employeeError);
         toast({
           title: "Error",
           description: "Failed to create employee record.",

@@ -189,6 +189,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ensure_employee_exists: {
+        Args: {
+          p_email?: string
+          p_employee_id: string
+          p_name: string
+          p_section?: string
+        }
+        Returns: undefined
+      }
       ensure_user_role: { Args: never; Returns: undefined }
       has_role: {
         Args: {
