@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart3, Search, Filter, Download, Loader2, Trash2, Edit, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import EditOvertimeDialog from "@/components/EditOvertimeDialog";
 
 interface OvertimeRecord {
@@ -31,6 +32,7 @@ interface OvertimeRecord {
 
 export default function Reports() {
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -541,29 +543,31 @@ export default function Reports() {
                         {item.reason}
                       </TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(item)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(item.id)}
-                            disabled={deletingId === item.id}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          >
-                            {deletingId === item.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
+                        {isAdmin() && (
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(item)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(item.id)}
+                              disabled={deletingId === item.id}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              {deletingId === item.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
