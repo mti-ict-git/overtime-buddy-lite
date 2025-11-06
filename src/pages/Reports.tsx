@@ -497,13 +497,13 @@ export default function Reports() {
                       />
                     </div>
                   </TableHead>
-                  <TableHead className="w-32">Actions</TableHead>
+                  {isAdmin() && <TableHead className="w-32">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={isAdmin() ? 7 : 6} className="text-center py-8">
                       <div className="flex items-center justify-center space-x-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span className="text-muted-foreground">Loading overtime records...</span>
@@ -512,7 +512,7 @@ export default function Reports() {
                   </TableRow>
                 ) : sortedData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={isAdmin() ? 7 : 6} className="text-center py-8 text-muted-foreground">
                       No overtime records found
                     </TableCell>
                   </TableRow>
