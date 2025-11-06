@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 const navigation = [
   { name: "Input Overtime", href: "/", icon: Clock, allowGuests: true },
   { name: "Employee Registration", href: "/employee-registration", icon: User, allowGuests: true },
-  { name: "Reports", href: "/reports", icon: BarChart3, adminOnly: true },
+  { name: "Reports", href: "/reports", icon: BarChart3, allowUsers: true },
   { name: "Export", href: "/export", icon: FileText, adminOnly: true },
   { name: "User Management", href: "/employee-management", icon: Users, adminOnly: true },
 ];
@@ -28,8 +28,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     // If user is not authenticated, only show items that allow guests
     if (!user) return item.allowGuests;
     
-    // If user has 'user' role, only show Input Overtime
-    if (isUser() && item.href !== '/') return false;
+    // If user has 'user' role, show Input Overtime and items that allow users
+    if (isUser() && !isAdmin()) {
+      return item.href === '/' || item.allowUsers;
+    }
     
     // If user is authenticated but not admin, filter out admin-only items
     if (!isAdmin() && item.adminOnly) return false;
